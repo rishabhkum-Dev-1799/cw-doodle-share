@@ -1,35 +1,28 @@
 import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import rough from 'roughjs';
+import { RoughObj } from './whiteBoardTypes';
 interface CanvasProps {
   ctxRef?: any;
   canvasRef: React.RefObject<HTMLCanvasElement>;
-  color?: string;
-  tool?: string;
+  color: string;
+  tool: string;
+  elements:RoughObj[]
+  setElements:(data:any)=>void
 }
-interface RoughObj {
-  type: string;
-  offsetX?: number;
-  offsetY?: number;
-  path?: any;
-  stroke?: string;
-  x1?: number;
-  y1?: number;
-  x2?: number;
-  y2?: number;
-  rectWidth?: number;
-  rectHeight?: number;
-}
-const Canvas: React.FC<CanvasProps> = ({ ctxRef, canvasRef, color, tool }) => {
+
+const Canvas: React.FC<CanvasProps> = ({ ctxRef, canvasRef, color, tool,elements,setElements }) => {
   const [isDrawing, setDrawing] = useState<boolean>(false);
-  const [elements, setElements] = useState<Array<RoughObj>>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   // Handling Side Effects
   useEffect(() => {
     const canvas = canvasRef.current!;
     canvas.height = containerRef.current?.offsetHeight!;
     canvas.width = containerRef.current?.offsetWidth!;
-    const ctx = canvas?.getContext('2d');
+    const ctx = canvas.getContext('2d');
     ctxRef.current = ctx;
+    if (ctx) {
+      ctx.lineCap = 'round';
+    }
   }, []);
 
   useLayoutEffect(() => {
@@ -42,17 +35,42 @@ const Canvas: React.FC<CanvasProps> = ({ ctxRef, canvasRef, color, tool }) => {
       );
     }
     const roughCanvas = rough.canvas(canvasRef.current!);
-    const roughGenerator=roughCanvas.generator
-    elements.forEach((element, index) => {
+    const roughGenerator = roughCanvas.generator;
+    elements.forEach((element) => {
       if (element.type === 'pencil') {
-        roughCanvas.draw(roughGenerator.linearPath(element.path));
+        roughCanvas.draw(
+          roughGenerator.linearPath(element.path, {
+            roughness: 0,
+            stroke: element.color,
+            strokeWidth: 4,
+          })
+        );
       } else if (element.type === 'line') {
         if (element.x1 && element.y1 && element.x2 && element.y2) {
-          roughCanvas.draw(roughGenerator.line(element.x1, element.y1, element.x2, element.y2));
+          roughCanvas.draw(
+            roughGenerator.line(
+              element.x1,
+              element.y1,
+              element.x2,
+              element.y2,
+              { roughness: 0, stroke: element.color, strokeWidth: 4 }
+            )
+          );
         }
       } else if (element.type === 'rectangle') {
-        if (element.x1 && element.y1 && element.rectWidth && element.rectHeight) {
-          roughCanvas.rectangle(element.x1, element.y1, element.rectWidth, element.rectHeight);
+        if (
+          element.x1 &&
+          element.y1 &&
+          element.rectWidth &&
+          element.rectHeight
+        ) {
+          roughCanvas.rectangle(
+            element.x1,
+            element.y1,
+            element.rectWidth,
+            element.rectHeight,
+            { roughness: 0, stroke: element.color, strokeWidth: 4 }
+          );
         }
       }
     });
@@ -62,18 +80,18 @@ const Canvas: React.FC<CanvasProps> = ({ ctxRef, canvasRef, color, tool }) => {
     const { offsetX, offsetY } = event.nativeEvent;
     setDrawing(true);
     if (tool === 'pencil') {
-      setElements((prevValue) => [
+      setElements((prevValue: any) => [
         ...prevValue,
         {
           type: 'pencil',
           offsetX,
           offsetY,
           path: [[offsetX, offsetY]],
-          stroke: 'white',
+          color: color,
         },
       ]);
     } else if (tool === 'line') {
-      setElements((prevValue) => [
+      setElements((prevValue: any) => [
         ...prevValue,
         {
           type: 'line',
@@ -81,11 +99,11 @@ const Canvas: React.FC<CanvasProps> = ({ ctxRef, canvasRef, color, tool }) => {
           y1: offsetY,
           x2: offsetX,
           y2: offsetY,
-          stroke: 'black',
+          color: color,
         },
       ]);
     } else if (tool === 'rectangle') {
-      setElements((prevValue) => [
+      setElements((prevValue: any) => [
         ...prevValue,
         {
           type: 'rectangle',
@@ -93,7 +111,7 @@ const Canvas: React.FC<CanvasProps> = ({ ctxRef, canvasRef, color, tool }) => {
           y1: offsetY,
           rectWidth: 0,
           rectHeight: 0,
-          stroke: 'black',
+          color: color,
         },
       ]);
     }
@@ -104,8 +122,8 @@ const Canvas: React.FC<CanvasProps> = ({ ctxRef, canvasRef, color, tool }) => {
       if (tool === 'pencil') {
         const { path } = elements[elements.length - 1];
         const newPath = [...path, [offsetX, offsetY]];
-        setElements((prevValue) => {
-          return prevValue.map((element, index) => {
+        setElements((prevValue: any[]) => {
+          return prevValue.map((element: any, index: number) => {
             if (index === elements.length - 1) {
               return {
                 ...element,
@@ -119,8 +137,8 @@ const Canvas: React.FC<CanvasProps> = ({ ctxRef, canvasRef, color, tool }) => {
           });
         });
       } else if (tool === 'line') {
-        setElements((prevValue) => {
-          return prevValue.map((element, index) => {
+        setElements((prevValue: any[]) => {
+          return prevValue.map((element: any, index: number) => {
             if (index === elements.length - 1) {
               return {
                 ...element,
@@ -135,14 +153,14 @@ const Canvas: React.FC<CanvasProps> = ({ ctxRef, canvasRef, color, tool }) => {
           });
         });
       } else if (tool === 'rectangle') {
-        console.log(offsetX,offsetY)
-        setElements((prevValue) => {
-          return prevValue.map((element, index) => {
+        console.log(offsetX, offsetY);
+        setElements((prevValue: any[]) => {
+          return prevValue.map((element: { x1: any; y1: any; }, index: number) => {
             if (index === elements.length - 1) {
               return {
                 ...element,
-                rectWidth: offsetX-element.x1!,
-                rectHeight: offsetY-element.y1!,
+                rectWidth: offsetX - element.x1!,
+                rectHeight: offsetY - element.y1!,
               };
             } else {
               return {
@@ -154,7 +172,7 @@ const Canvas: React.FC<CanvasProps> = ({ ctxRef, canvasRef, color, tool }) => {
       }
     }
   };
-  const onMouseUpHandler = (event: React.MouseEvent<HTMLCanvasElement>) => {
+  const onMouseUpHandler = () => {
     setDrawing(false);
   };
   return (
@@ -170,7 +188,7 @@ const Canvas: React.FC<CanvasProps> = ({ ctxRef, canvasRef, color, tool }) => {
           <div className='w-[20px] h-[20px] bg-green-600 rounded-full'></div>
           <div className='w-[20px] h-[20px] bg-red-600 rounded-full'></div>
         </div>
-        <canvas  className='w-full h-full' ref={canvasRef} />
+        <canvas className='w-full h-full' ref={canvasRef} />
       </section>
     </>
   );

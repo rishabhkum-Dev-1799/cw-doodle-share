@@ -18,15 +18,15 @@ const Homepage = () => {
       <section className=' full flex flex-col items-center gap-4 p-4 w-full  '>
         <DefaultButton
           className='w-[100px] md:w-[200px]'
-          onClick={navigateToJoinRoom}
-        >
-          {ButtonLabels?.join_room}
-        </DefaultButton>
-        <DefaultButton
-          className='w-[100px] md:w-[200px]'
           onClick={navigateToCreateRoom}
         >
           {ButtonLabels?.create_room}
+        </DefaultButton>
+        <DefaultButton
+          className='w-[100px] md:w-[200px]'
+          onClick={navigateToJoinRoom}
+        >
+          {ButtonLabels?.join_room}
         </DefaultButton>
       </section>
     </Container>
